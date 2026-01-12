@@ -2,813 +2,581 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Sword Dungeon">
-    <meta name="theme-color" content="#1a1a1a">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sword Dungeon Game</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        html, body {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background: #0a0a0a;
-            font-family: 'Arial', sans-serif;
         }
 
         body {
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
         }
 
-        #gameContainer {
-            width: 100%;
-            height: 100%;
+        .game-container {
             position: relative;
-            display: flex;
-            flex-direction: column;
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
-            max-width: 100vw;
-            max-height: 100vh;
+            width: 100%;
+            max-width: 1024px;
+            height: 100vh;
+            background: #000;
             overflow: hidden;
+            box-shadow: 0 0 40px rgba(255, 100, 0, 0.3);
         }
 
         #gameCanvas {
-            flex: 1;
-            width: 100%;
-            height: 100%;
             display: block;
-            background: linear-gradient(to bottom, #0f0f1e 0%, #1a1a2e 50%, #0a0a0a 100%);
-            image-rendering: pixelated;
-            image-rendering: crisp-edges;
-            touch-action: none;
-        }
-
-        /* UI Overlay */
-        #uiContainer {
-            position: absolute;
-            top: 0;
-            left: 0;
             width: 100%;
             height: 100%;
-            pointer-events: none;
+            background: #000;
+        }
+
+        /* Dungeon World Themes */
+        .dungeon-stone {
+            background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.8);
+        }
+
+        .dungeon-fire {
+            background: linear-gradient(180deg, #4a2a1a 0%, #2a1a0a 100%);
+            box-shadow: inset 0 0 30px rgba(255, 100, 0, 0.2);
+        }
+
+        .dungeon-ice {
+            background: linear-gradient(180deg, #1a3a4a 0%, #0a2a3a 100%);
+            box-shadow: inset 0 0 30px rgba(100, 200, 255, 0.2);
+        }
+
+        .dungeon-shadow {
+            background: linear-gradient(180deg, #1a1a2a 0%, #0a0a1a 100%);
+            box-shadow: inset 0 0 30px rgba(100, 50, 150, 0.2);
+        }
+
+        .dungeon-nature {
+            background: linear-gradient(180deg, #2a3a1a 0%, #1a2a0a 100%);
+            box-shadow: inset 0 0 30px rgba(100, 150, 50, 0.2);
+        }
+
+        /* Virtual Joystick Styles */
+        .joystick-container {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            width: 120px;
+            height: 120px;
+            background: rgba(50, 50, 50, 0.7);
+            border: 3px solid rgba(255, 100, 0, 0.5);
+            border-radius: 50%;
             z-index: 100;
+            touch-action: none;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 100, 0, 0.3);
         }
 
-        .ui-element {
-            pointer-events: auto;
-        }
-
-        /* HUD Display */
-        #hud {
+        .joystick-base {
             position: absolute;
-            top: 0;
-            left: 0;
             width: 100%;
-            padding: 15px;
-            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent);
-            color: #00ff00;
-            font-weight: bold;
-            font-size: clamp(12px, 3vw, 18px);
-            text-shadow: 0 0 10px rgba(0, 255, 0, 0.5), 2px 2px 4px #000;
-            z-index: 101;
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
-            align-items: center;
-            letter-spacing: 1px;
-        }
-
-        .hud-stat {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .hud-stat-label {
-            font-size: clamp(10px, 2.5vw, 14px);
-            color: #00cc00;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .hud-stat-value {
-            font-size: clamp(12px, 3.5vw, 20px);
-            color: #00ff00;
-        }
-
-        /* Health Bar */
-        #healthBar {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 90%;
-            max-width: 300px;
-            height: 30px;
-            background: rgba(0, 0, 0, 0.8);
-            border: 3px solid #00ff00;
-            border-radius: 5px;
-            overflow: hidden;
-            box-shadow: 0 0 15px rgba(0, 255, 0, 0.3), inset 0 0 10px rgba(0, 0, 0, 0.5);
-            z-index: 101;
-        }
-
-        #healthBarFill {
             height: 100%;
-            background: linear-gradient(90deg, #00ff00 0%, #00cc00 50%, #00ff00 100%);
-            width: 100%;
-            transition: width 0.3s ease;
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.8), inset 0 0 5px rgba(255, 255, 255, 0.3);
-            position: relative;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(100, 100, 100, 0.3), rgba(20, 20, 20, 0.5));
         }
 
-        #healthBarFill::after {
-            content: '';
+        .joystick-stick {
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-            animation: healthPulse 1.5s ease-in-out infinite;
-        }
-
-        @keyframes healthPulse {
-            0%, 100% { opacity: 0; }
-            50% { opacity: 1; }
-        }
-
-        #healthText {
-            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 150, 50, 0.8), rgba(200, 80, 0, 0.8));
+            border: 2px solid rgba(255, 100, 0, 0.8);
+            border-radius: 50%;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: #fff;
-            font-weight: bold;
-            font-size: clamp(12px, 2.5vw, 16px);
-            text-shadow: 1px 1px 3px #000;
-            z-index: 102;
-            pointer-events: none;
+            box-shadow: 0 0 10px rgba(255, 100, 0, 0.6), inset 0 0 5px rgba(0, 0, 0, 0.4);
+            cursor: grab;
         }
 
-        /* Touch Controls */
-        #touchControls {
+        .joystick-stick:active {
+            cursor: grabbing;
+        }
+
+        /* UI Styles */
+        .ui-panel {
             position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: auto;
-            display: flex;
-            gap: 10px;
-            padding: 10px;
-            background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
-            z-index: 101;
-            justify-content: space-around;
-            align-items: flex-end;
-            flex-wrap: wrap;
-        }
-
-        .control-button {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            border: 2px solid #00ff00;
-            background: linear-gradient(135deg, rgba(0, 255, 0, 0.3), rgba(0, 200, 0, 0.2));
-            color: #00ff00;
-            font-weight: bold;
-            font-size: 20px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            user-select: none;
-            touch-action: manipulation;
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3), inset 0 0 10px rgba(0, 255, 0, 0.1);
-            transition: all 0.15s ease;
-            flex-shrink: 0;
-        }
-
-        .control-button:hover {
-            background: linear-gradient(135deg, rgba(0, 255, 0, 0.5), rgba(0, 200, 0, 0.4));
-            box-shadow: 0 0 15px rgba(0, 255, 0, 0.6), inset 0 0 15px rgba(0, 255, 0, 0.2);
-            transform: scale(1.05);
-        }
-
-        .control-button:active {
-            background: linear-gradient(135deg, rgba(0, 255, 0, 0.7), rgba(0, 200, 0, 0.6));
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.8), inset 0 0 20px rgba(0, 255, 0, 0.3);
-            transform: scale(0.95);
-        }
-
-        .control-button.direction-btn {
-            width: 50px;
-            height: 50px;
-            font-size: 24px;
-        }
-
-        /* Menu Screens */
-        #menuScreen, #gameOverScreen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 200;
-            gap: 20px;
-            padding: 20px;
-        }
-
-        #gameOverScreen {
-            display: none;
-        }
-
-        .menu-title {
-            font-size: clamp(32px, 10vw, 64px);
-            color: #00ff00;
-            text-shadow: 0 0 20px rgba(0, 255, 0, 0.8), 0 0 40px rgba(0, 255, 0, 0.4);
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            animation: titleGlow 2s ease-in-out infinite;
-        }
-
-        @keyframes titleGlow {
-            0%, 100% { text-shadow: 0 0 20px rgba(0, 255, 0, 0.8), 0 0 40px rgba(0, 255, 0, 0.4); }
-            50% { text-shadow: 0 0 30px rgba(0, 255, 0, 1), 0 0 60px rgba(0, 255, 0, 0.6); }
-        }
-
-        .menu-subtitle {
-            font-size: clamp(16px, 4vw, 28px);
-            color: #00cc00;
-            text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .menu-button {
-            padding: 15px 40px;
-            font-size: clamp(14px, 3.5vw, 20px);
-            color: #000;
-            background: linear-gradient(135deg, #00ff00, #00cc00);
-            border: none;
+            top: 20px;
+            right: 20px;
+            background: rgba(20, 20, 20, 0.9);
+            border: 2px solid rgba(255, 100, 0, 0.6);
             border-radius: 8px;
-            cursor: pointer;
+            padding: 15px;
+            z-index: 100;
+            min-width: 250px;
+            box-shadow: 0 0 20px rgba(255, 100, 0, 0.2);
+        }
+
+        .ui-section {
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 100, 0, 0.3);
+            padding-bottom: 10px;
+        }
+
+        .ui-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .ui-label {
+            color: rgba(255, 150, 50, 0.8);
+            font-size: 12px;
             font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 2px;
-            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5), 0 5px 20px rgba(0, 0, 0, 0.5);
-            transition: all 0.3s ease;
-            min-width: 200px;
-            touch-action: manipulation;
+            margin-bottom: 5px;
         }
 
-        .menu-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 0 25px rgba(0, 255, 0, 0.8), 0 8px 25px rgba(0, 0, 0, 0.7);
-        }
-
-        .menu-button:active {
-            transform: translateY(0);
-            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5), inset 0 3px 10px rgba(0, 0, 0, 0.3);
-        }
-
-        .stats-display {
-            text-align: center;
-            color: #00ff00;
-            font-size: clamp(14px, 3vw, 20px);
-            line-height: 1.8;
-            margin: 20px 0;
-            text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
-        }
-
-        /* Damage Numbers */
-        .damage-number {
-            position: absolute;
-            color: #ff4444;
+        .ui-value {
+            color: #fff;
+            font-size: 14px;
             font-weight: bold;
-            font-size: 20px;
-            pointer-events: none;
-            text-shadow: 1px 1px 3px #000;
-            z-index: 50;
-            animation: floatUp 1s ease-out forwards;
         }
 
-        @keyframes floatUp {
-            0% {
-                opacity: 1;
-                transform: translate(0, 0);
-            }
-            100% {
-                opacity: 0;
-                transform: translate(0, -50px);
-            }
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            #touchControls {
-                padding-bottom: 20px;
-                gap: 8px;
-            }
-
-            .control-button {
-                width: 55px;
-                height: 55px;
-                font-size: 18px;
-            }
-
-            .control-button.direction-btn {
-                width: 45px;
-                height: 45px;
-                font-size: 20px;
-            }
-
-            #hud {
-                padding: 10px;
-                font-size: 12px;
-                gap: 8px;
-            }
-
-            #healthBar {
-                width: 85%;
-                height: 25px;
-                bottom: 15px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .control-button {
-                width: 50px;
-                height: 50px;
-                font-size: 16px;
-            }
-
-            .control-button.direction-btn {
-                width: 40px;
-                height: 40px;
-                font-size: 18px;
-            }
-
-            #touchControls {
-                padding: 8px;
-                gap: 6px;
-            }
-
-            #hud {
-                grid-template-columns: 1fr;
-                padding: 8px;
-                gap: 5px;
-            }
-
-            .hud-stat {
-                gap: 3px;
-            }
-
-            #healthBar {
-                height: 22px;
-                bottom: 10px;
-                width: 80%;
-                border-width: 2px;
-            }
-        }
-
-        /* Landscape Mode */
-        @media (orientation: landscape) {
-            #touchControls {
-                right: 0;
-                bottom: 0;
-                width: auto;
-                height: 100%;
-                flex-direction: column;
-                padding: 10px;
-                background: linear-gradient(to left, rgba(0, 0, 0, 0.8), transparent);
-                justify-content: flex-end;
-                align-items: flex-end;
-            }
-
-            .control-button {
-                width: 55px;
-                height: 55px;
-            }
-
-            .control-button.direction-btn {
-                width: 45px;
-                height: 45px;
-            }
-        }
-
-        /* Performance Optimization */
-        @media (prefers-reduced-motion: reduce) {
-            * {
-                animation: none !important;
-                transition: none !important;
-            }
-        }
-
-        /* Loading Screen */
-        #loadingScreen {
+        .world-selector {
             position: absolute;
-            top: 0;
-            left: 0;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(20, 20, 20, 0.9);
+            border: 2px solid rgba(255, 100, 0, 0.6);
+            border-radius: 8px;
+            padding: 10px;
+            z-index: 100;
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            width: 200px;
+        }
+
+        .world-btn {
+            padding: 8px 12px;
+            background: rgba(50, 50, 50, 0.8);
+            border: 2px solid rgba(255, 100, 0, 0.4);
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .world-btn:hover {
+            background: rgba(100, 100, 100, 0.8);
+            border-color: rgba(255, 100, 0, 0.8);
+            box-shadow: 0 0 10px rgba(255, 100, 0, 0.4);
+        }
+
+        .world-btn.active {
+            background: rgba(255, 100, 0, 0.6);
+            border-color: rgba(255, 100, 0, 1);
+            box-shadow: 0 0 15px rgba(255, 100, 0, 0.6);
+        }
+
+        .help-text {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: rgba(255, 150, 50, 0.6);
+            font-size: 12px;
+            z-index: 100;
+            max-width: 200px;
+            line-height: 1.4;
+        }
+
+        /* Parallax backgrounds */
+        .parallax-layer {
+            position: absolute;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 300;
-            gap: 20px;
+            background-repeat: repeat-x;
+            background-position: 0 0;
         }
 
-        .loader {
-            border: 4px solid rgba(0, 255, 0, 0.2);
-            border-top: 4px solid #00ff00;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
+        .parallax-far {
+            opacity: 0.3;
+            z-index: -1;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .parallax-mid {
+            opacity: 0.5;
+            z-index: -2;
         }
 
-        /* Visual Effects */
-        .hit-flash {
-            animation: hitFlash 0.2s ease;
+        .parallax-back {
+            opacity: 0.2;
+            z-index: -3;
         }
 
-        @keyframes hitFlash {
-            0%, 100% { filter: brightness(1); }
-            50% { filter: brightness(1.3); }
-        }
-
-        /* Touch feedback */
-        .button-press {
-            animation: buttonPress 0.1s ease;
-        }
-
-        @keyframes buttonPress {
-            0% { transform: scale(1); }
-            50% { transform: scale(0.95); }
-            100% { transform: scale(1); }
+        /* Enemy and effects */
+        .fps-counter {
+            position: absolute;
+            top: 20px;
+            left: 150px;
+            color: rgba(100, 255, 100, 0.8);
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            border-radius: 4px;
+            z-index: 100;
         }
     </style>
 </head>
 <body>
-    <div id="gameContainer">
+    <div class="game-container" id="gameContainer">
         <canvas id="gameCanvas"></canvas>
-
-        <!-- Loading Screen -->
-        <div id="loadingScreen">
-            <div class="loader"></div>
-            <div style="color: #00ff00; font-size: 18px; text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);">Loading Game...</div>
+        <div class="help-text">
+            <strong>Controls:</strong><br>
+            🕹️ Move: Joystick<br>
+            Click: Attack<br>
+            [1-5]: Change World<br>
+            ESC: Pause
         </div>
-
-        <!-- Menu Screen -->
-        <div id="menuScreen">
-            <div class="menu-title">⚔️ Sword Dungeon ⚔️</div>
-            <div class="menu-subtitle">Adventure Awaits</div>
-            <button class="menu-button" id="startButton">Start Game</button>
-            <div style="color: #00aa00; font-size: 12px; margin-top: 20px; text-align: center; max-width: 90%;">
-                Use arrow keys or touch buttons to move<br>
-                Press Space or tap Attack to attack<br>
-                Collect gold and defeat enemies!
+        <div class="ui-panel">
+            <div class="ui-section">
+                <div class="ui-label">Current World</div>
+                <div class="ui-value" id="worldName">Stone Dungeon</div>
+            </div>
+            <div class="ui-section">
+                <div class="ui-label">Player HP</div>
+                <div class="ui-value" id="playerHP">100/100</div>
+            </div>
+            <div class="ui-section">
+                <div class="ui-label">Level</div>
+                <div class="ui-value" id="playerLevel">1</div>
+            </div>
+            <div class="ui-section">
+                <div class="ui-label">Enemies</div>
+                <div class="ui-value" id="enemyCount">0</div>
             </div>
         </div>
-
-        <!-- Game Over Screen -->
-        <div id="gameOverScreen">
-            <div class="menu-title">Game Over</div>
-            <div class="menu-subtitle" id="finalScore">Score: 0</div>
-            <div class="stats-display" id="statsDisplay"></div>
-            <button class="menu-button" id="restartButton">Play Again</button>
-            <button class="menu-button" id="mainMenuButton" style="background: linear-gradient(135deg, #00aa00, #008800);">Main Menu</button>
-        </div>
-
-        <!-- HUD -->
-        <div id="uiContainer">
-            <div id="hud">
-                <div class="hud-stat">
-                    <div class="hud-stat-label">Score</div>
-                    <div class="hud-stat-value" id="scoreDisplay">0</div>
-                </div>
-                <div class="hud-stat">
-                    <div class="hud-stat-label">Level</div>
-                    <div class="hud-stat-value" id="levelDisplay">1</div>
-                </div>
-                <div class="hud-stat">
-                    <div class="hud-stat-label">Enemies</div>
-                    <div class="hud-stat-value" id="enemyCountDisplay">0</div>
-                </div>
-            </div>
-
-            <!-- Health Bar -->
-            <div id="healthBar">
-                <div id="healthBarFill"></div>
-                <div id="healthText">100 / 100</div>
-            </div>
-
-            <!-- Touch Controls -->
-            <div id="touchControls">
-                <button class="control-button direction-btn" id="upBtn" title="Up">↑</button>
-                <button class="control-button direction-btn" id="leftBtn" title="Left">←</button>
-                <button class="control-button direction-btn" id="downBtn" title="Down">↓</button>
-                <button class="control-button direction-btn" id="rightBtn" title="Right">→</button>
-                <button class="control-button" id="attackBtn" title="Attack" style="background: linear-gradient(135deg, rgba(255, 0, 0, 0.3), rgba(200, 0, 0, 0.2)); border-color: #ff4444; color: #ff4444;">⚔️</button>
-            </div>
-        </div>
+        <div class="world-selector" id="worldSelector"></div>
+        <div class="fps-counter" id="fpsCounter">FPS: 0</div>
     </div>
 
     <script>
-        // Performance optimization: RequestAnimationFrame with FPS control
-        const FPS = 60;
-        const frameTime = 1000 / FPS;
-        let lastFrameTime = 0;
-
         // Game Constants
-        const CANVAS_WIDTH = 800;
-        const CANVAS_HEIGHT = 600;
-        const GRID_SIZE = 40;
+        const CANVAS_WIDTH = 1024;
+        const CANVAS_HEIGHT = 768;
+        const TILE_SIZE = 32;
+
+        // Dungeon World Definitions
+        const DUNGEONS = {
+            stone: {
+                name: 'Stone Dungeon',
+                id: 'stone',
+                color: '#2a2a2a',
+                accentColor: 'rgba(100, 100, 100, 0.8)',
+                tileColor: '#3a3a3a',
+                wallColor: '#1a1a1a',
+                floorPattern: 'stone',
+                parallaxColors: ['#1a1a1a', '#2a2a2a', '#3a3a3a'],
+                enemyColor: '#ff6b6b',
+                theme: 'dungeon-stone'
+            },
+            fire: {
+                name: 'Fire Cavern',
+                id: 'fire',
+                color: '#4a2a1a',
+                accentColor: 'rgba(255, 100, 50, 0.8)',
+                tileColor: '#5a3a2a',
+                wallColor: '#3a1a0a',
+                floorPattern: 'lava',
+                parallaxColors: ['#2a1a0a', '#4a2a1a', '#6a4a3a'],
+                enemyColor: '#ff4500',
+                theme: 'dungeon-fire'
+            },
+            ice: {
+                name: 'Ice Cavern',
+                id: 'ice',
+                color: '#1a3a4a',
+                accentColor: 'rgba(100, 200, 255, 0.8)',
+                tileColor: '#2a4a5a',
+                wallColor: '#0a2a3a',
+                floorPattern: 'ice',
+                parallaxColors: ['#0a2a3a', '#1a3a4a', '#2a4a5a'],
+                enemyColor: '#00d4ff',
+                theme: 'dungeon-ice'
+            },
+            shadow: {
+                name: 'Shadow Realm',
+                id: 'shadow',
+                color: '#1a1a2a',
+                accentColor: 'rgba(150, 100, 200, 0.8)',
+                tileColor: '#2a2a3a',
+                wallColor: '#0a0a1a',
+                floorPattern: 'shadow',
+                parallaxColors: ['#0a0a1a', '#1a1a2a', '#2a2a3a'],
+                enemyColor: '#9d4edd',
+                theme: 'dungeon-shadow'
+            },
+            nature: {
+                name: 'Overgrown Temple',
+                id: 'nature',
+                color: '#2a3a1a',
+                accentColor: 'rgba(100, 200, 50, 0.8)',
+                tileColor: '#3a4a2a',
+                wallColor: '#1a2a0a',
+                floorPattern: 'moss',
+                parallaxColors: ['#1a2a0a', '#2a3a1a', '#3a4a2a'],
+                enemyColor: '#76d944',
+                theme: 'dungeon-nature'
+            }
+        };
 
         // Game State
-        const game = {
-            running: false,
-            score: 0,
-            level: 1,
-            health: 100,
-            maxHealth: 100,
-            damageNumbers: [],
-            lastSpawnTime: 0,
-            spawnRate: 2000
+        const gameState = {
+            canvas: null,
+            ctx: null,
+            currentDungeon: 'stone',
+            player: {
+                x: CANVAS_WIDTH / 2,
+                y: CANVAS_HEIGHT / 2,
+                width: 24,
+                height: 32,
+                hp: 100,
+                maxHp: 100,
+                level: 1,
+                vx: 0,
+                vy: 0,
+                speed: 5,
+                color: '#ffeb3b',
+                attacking: false,
+                attackCooldown: 0
+            },
+            enemies: [],
+            particles: [],
+            joystick: {
+                x: 0,
+                y: 0,
+                active: false,
+                baseX: 0,
+                baseY: 0
+            },
+            keys: {},
+            mouse: {
+                x: 0,
+                y: 0,
+                down: false
+            },
+            camera: {
+                x: 0,
+                y: 0
+            },
+            parallaxOffset: 0,
+            fps: 0,
+            frameCount: 0,
+            lastTime: Date.now()
         };
 
-        // Player Object
-        const player = {
-            x: CANVAS_WIDTH / 2,
-            y: CANVAS_HEIGHT / 2,
-            width: 30,
-            height: 30,
-            speed: 5,
-            health: 100,
-            maxHealth: 100,
-            attacking: false,
-            attackCooldown: 0,
-            attackDuration: 200,
-            direction: 0,
-            velocityX: 0,
-            velocityY: 0
-        };
-
-        // Enemy Pool (for performance optimization)
-        const enemies = [];
-        const MAX_ENEMIES = 20;
-
-        // Input State
-        const keys = {};
-        const touchControls = {
-            up: false,
-            down: false,
-            left: false,
-            right: false,
-            attack: false
-        };
-
-        // DOM Elements
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d', { alpha: false });
-        const menuScreen = document.getElementById('menuScreen');
-        const gameOverScreen = document.getElementById('gameOverScreen');
-        const loadingScreen = document.getElementById('loadingScreen');
-
-        // Performance: Use offscreen canvas for rendering
-        let isHighDPI = window.devicePixelRatio > 1;
-
-        // Initialize
+        // Initialize Game
         function init() {
+            gameState.canvas = document.getElementById('gameCanvas');
+            gameState.ctx = gameState.canvas.getContext('2d');
+            
             // Set canvas size
-            resizeCanvas();
+            gameState.canvas.width = CANVAS_WIDTH;
+            gameState.canvas.height = CANVAS_HEIGHT;
+
+            // Initialize world selector buttons
+            initWorldSelector();
 
             // Setup event listeners
             setupEventListeners();
 
-            // Setup touch controls
-            setupTouchControls();
+            // Spawn initial enemies
+            spawnEnemies(5);
 
-            // Hide loading screen after setup
-            setTimeout(() => {
-                loadingScreen.style.display = 'none';
-            }, 500);
+            // Start game loop
+            gameLoop();
         }
 
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+        function initWorldSelector() {
+            const selector = document.getElementById('worldSelector');
+            selector.innerHTML = '';
+            
+            Object.values(DUNGEONS).forEach(dungeon => {
+                const btn = document.createElement('button');
+                btn.className = 'world-btn';
+                if (dungeon.id === gameState.currentDungeon) {
+                    btn.classList.add('active');
+                }
+                btn.textContent = dungeon.id.charAt(0).toUpperCase() + dungeon.id.slice(1);
+                btn.onclick = () => changeWorld(dungeon.id);
+                selector.appendChild(btn);
+            });
+        }
+
+        function changeWorld(dungeonId) {
+            gameState.currentDungeon = dungeonId;
+            gameState.parallaxOffset = 0;
+            gameState.player.x = CANVAS_WIDTH / 2;
+            gameState.player.y = CANVAS_HEIGHT / 2;
+            gameState.enemies = [];
+            spawnEnemies(5 + gameState.player.level * 2);
+            
+            // Update UI
+            document.getElementById('worldName').textContent = DUNGEONS[dungeonId].name;
+            
+            // Update active button
+            document.querySelectorAll('.world-btn').forEach((btn, idx) => {
+                if (Object.values(DUNGEONS)[idx].id === dungeonId) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            // Update container theme
+            const container = document.getElementById('gameContainer');
+            Object.values(DUNGEONS).forEach(d => {
+                container.classList.remove(d.theme);
+            });
+            container.classList.add(DUNGEONS[dungeonId].theme);
         }
 
         function setupEventListeners() {
             // Keyboard
-            window.addEventListener('keydown', (e) => {
-                keys[e.key.toLowerCase()] = true;
-
-                if (e.key === ' ') {
-                    e.preventDefault();
-                    touchControls.attack = true;
+            document.addEventListener('keydown', (e) => {
+                gameState.keys[e.key] = true;
+                
+                if (e.key >= '1' && e.key <= '5') {
+                    const dungeonArray = Object.values(DUNGEONS);
+                    const index = parseInt(e.key) - 1;
+                    if (index < dungeonArray.length) {
+                        changeWorld(dungeonArray[index].id);
+                    }
                 }
             });
 
-            window.addEventListener('keyup', (e) => {
-                keys[e.key.toLowerCase()] = false;
-
-                if (e.key === ' ') {
-                    touchControls.attack = false;
-                }
+            document.addEventListener('keyup', (e) => {
+                gameState.keys[e.key] = false;
             });
 
-            // Menu Buttons
-            document.getElementById('startButton').addEventListener('click', startGame);
-            document.getElementById('restartButton').addEventListener('click', startGame);
-            document.getElementById('mainMenuButton').addEventListener('click', showMenu);
-
-            // Window resize
-            window.addEventListener('resize', () => {
-                resizeCanvas();
+            // Mouse
+            document.addEventListener('mousemove', (e) => {
+                const rect = gameState.canvas.getBoundingClientRect();
+                gameState.mouse.x = e.clientX - rect.left;
+                gameState.mouse.y = e.clientY - rect.top;
             });
 
-            // Prevent context menu on long press
-            canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+            document.addEventListener('mousedown', () => {
+                gameState.mouse.down = true;
+            });
+
+            document.addEventListener('mouseup', () => {
+                gameState.mouse.down = false;
+            });
+
+            // Joystick Touch Events
+            const joystickContainer = document.querySelector('.joystick-container');
+            const joystickStick = document.querySelector('.joystick-stick');
+
+            joystickContainer.addEventListener('touchstart', handleJoystickStart);
+            joystickContainer.addEventListener('touchmove', handleJoystickMove);
+            joystickContainer.addEventListener('touchend', handleJoystickEnd);
+
+            joystickContainer.addEventListener('mousedown', handleJoystickStart);
+            document.addEventListener('mousemove', handleJoystickMove);
+            document.addEventListener('mouseup', handleJoystickEnd);
         }
 
-        function setupTouchControls() {
-            const buttons = {
-                up: document.getElementById('upBtn'),
-                down: document.getElementById('downBtn'),
-                left: document.getElementById('leftBtn'),
-                right: document.getElementById('rightBtn'),
-                attack: document.getElementById('attackBtn')
-            };
+        function handleJoystickStart(e) {
+            const joystickContainer = document.querySelector('.joystick-container');
+            const rect = joystickContainer.getBoundingClientRect();
+            gameState.joystick.baseX = rect.left + rect.width / 2;
+            gameState.joystick.baseY = rect.top + rect.height / 2;
+            gameState.joystick.active = true;
+            handleJoystickMove(e);
+        }
 
-            for (const [direction, button] of Object.entries(buttons)) {
-                button.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    touchControls[direction] = true;
-                    button.classList.add('button-press');
-                });
+        function handleJoystickMove(e) {
+            if (!gameState.joystick.active) return;
 
-                button.addEventListener('touchend', (e) => {
-                    e.preventDefault();
-                    touchControls[direction] = false;
-                    button.classList.remove('button-press');
-                });
+            const touch = e.touches ? e.touches[0] : e;
+            const dx = touch.clientX - gameState.joystick.baseX;
+            const dy = touch.clientY - gameState.joystick.baseY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const maxDistance = 40;
 
-                button.addEventListener('mousedown', () => {
-                    touchControls[direction] = true;
-                    button.classList.add('button-press');
-                });
+            if (distance > maxDistance) {
+                gameState.joystick.x = (dx / distance) * maxDistance;
+                gameState.joystick.y = (dy / distance) * maxDistance;
+            } else {
+                gameState.joystick.x = dx;
+                gameState.joystick.y = dy;
+            }
 
-                button.addEventListener('mouseup', () => {
-                    touchControls[direction] = false;
-                    button.classList.remove('button-press');
-                });
+            const stick = document.querySelector('.joystick-stick');
+            if (stick) {
+                stick.style.transform = `translate(calc(-50% + ${gameState.joystick.x}px), calc(-50% + ${gameState.joystick.y}px))`;
+            }
+        }
 
-                button.addEventListener('mouseleave', () => {
-                    touchControls[direction] = false;
-                    button.classList.remove('button-press');
+        function handleJoystickEnd() {
+            gameState.joystick.active = false;
+            gameState.joystick.x = 0;
+            gameState.joystick.y = 0;
+            
+            const stick = document.querySelector('.joystick-stick');
+            if (stick) {
+                stick.style.transform = 'translate(-50%, -50%)';
+            }
+        }
+
+        function spawnEnemies(count) {
+            const dungeon = DUNGEONS[gameState.currentDungeon];
+            for (let i = 0; i < count; i++) {
+                gameState.enemies.push({
+                    x: Math.random() * CANVAS_WIDTH,
+                    y: Math.random() * CANVAS_HEIGHT,
+                    width: 20,
+                    height: 20,
+                    hp: 30 + gameState.player.level * 5,
+                    maxHp: 30 + gameState.player.level * 5,
+                    vx: (Math.random() - 0.5) * 3,
+                    vy: (Math.random() - 0.5) * 3,
+                    color: dungeon.enemyColor,
+                    speed: 2 + gameState.player.level * 0.5
                 });
             }
         }
 
-        function startGame() {
-            game.running = true;
-            game.score = 0;
-            game.level = 1;
-            game.health = 100;
-            player.health = 100;
-            player.x = CANVAS_WIDTH / 2;
-            player.y = CANVAS_HEIGHT / 2;
-            enemies.length = 0;
-
-            menuScreen.style.display = 'none';
-            gameOverScreen.style.display = 'none';
-
-            update();
-        }
-
-        function showMenu() {
-            game.running = false;
-            menuScreen.style.display = 'flex';
-            gameOverScreen.style.display = 'none';
-        }
-
-        function showGameOver() {
-            game.running = false;
-            document.getElementById('finalScore').textContent = `Score: ${game.score}`;
-            document.getElementById('statsDisplay').innerHTML = `
-                Level: ${game.level}<br>
-                Enemies Defeated: ${Math.floor(game.score / 10)}<br>
-                Gold Collected: ${game.score}
-            `;
-            gameOverScreen.style.display = 'flex';
-            menuScreen.style.display = 'none';
-        }
-
-        // Game Update Loop
         function update() {
-            if (!game.running) return;
+            // Update player movement from joystick or keys
+            const moveX = gameState.joystick.x || (gameState.keys['ArrowRight'] || gameState.keys['d'] ? 1 : (gameState.keys['ArrowLeft'] || gameState.keys['a'] ? -1 : 0));
+            const moveY = gameState.joystick.y || (gameState.keys['ArrowDown'] || gameState.keys['s'] ? 1 : (gameState.keys['ArrowUp'] || gameState.keys['w'] ? -1 : 0));
 
-            const now = performance.now();
-            const deltaTime = now - lastFrameTime;
+            gameState.player.vx = moveX * gameState.player.speed;
+            gameState.player.vy = moveY * gameState.player.speed;
 
-            if (deltaTime >= frameTime) {
-                lastFrameTime = now;
+            // Update player position
+            gameState.player.x += gameState.player.vx;
+            gameState.player.y += gameState.player.vy;
 
-                // Update player
-                updatePlayer();
+            // Boundary checking
+            gameState.player.x = Math.max(0, Math.min(CANVAS_WIDTH - gameState.player.width, gameState.player.x));
+            gameState.player.y = Math.max(0, Math.min(CANVAS_HEIGHT - gameState.player.height, gameState.player.y));
 
-                // Update enemies
-                updateEnemies();
+            // Update parallax
+            gameState.parallaxOffset += gameState.player.vx * 0.05;
 
-                // Spawn enemies
-                spawnEnemies();
-
-                // Check collisions
-                checkCollisions();
-
-                // Render
-                render();
-
-                // Update UI
-                updateUI();
-            }
-
-            requestAnimationFrame(update);
-        }
-
-        function updatePlayer() {
-            // Handle movement input
-            let moveX = 0;
-            let moveY = 0;
-
-            if (keys['arrowup'] || keys['w'] || touchControls.up) moveY -= player.speed;
-            if (keys['arrowdown'] || keys['s'] || touchControls.down) moveY += player.speed;
-            if (keys['arrowleft'] || keys['a'] || touchControls.left) moveX -= player.speed;
-            if (keys['arrowright'] || keys['d'] || touchControls.right) moveX += player.speed;
-
-            player.velocityX = moveX;
-            player.velocityY = moveY;
-
-            // Apply velocity with bounds checking
-            player.x = Math.max(player.width / 2, Math.min(canvas.width - player.width / 2, player.x + moveX));
-            player.y = Math.max(player.height / 2, Math.min(canvas.height - player.height / 2, player.y + moveY));
-
-            // Handle attacking
-            if ((keys[' '] || touchControls.attack) && player.attackCooldown <= 0) {
-                player.attacking = true;
-                player.attackCooldown = 400;
-            }
-
-            if (player.attacking) {
-                player.attackCooldown -= 16;
-                if (player.attackCooldown <= 0) {
-                    player.attacking = false;
-                }
-            }
-
-            // Calculate direction based on velocity
-            if (moveX !== 0 || moveY !== 0) {
-                player.direction = Math.atan2(moveY, moveX);
-            }
-        }
-
-        function updateEnemies() {
-            for (let i = enemies.length - 1; i >= 0; i--) {
-                const enemy = enemies[i];
-
-                // Simple AI: move towards player
-                const dx = player.x - enemy.x;
-                const dy = player.y - enemy.y;
+            // Update enemies
+            gameState.enemies.forEach((enemy, index) => {
+                // AI: Chase player
+                const dx = gameState.player.x - enemy.x;
+                const dy = gameState.player.y - enemy.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
 
                 if (distance > 0) {
@@ -816,231 +584,225 @@
                     enemy.y += (dy / distance) * enemy.speed;
                 }
 
-                // Remove dead enemies
-                if (enemy.health <= 0) {
-                    game.score += 10;
-                    game.level = Math.floor(game.score / 50) + 1;
-                    enemies.splice(i, 1);
+                // Collision with player
+                if (checkCollision(gameState.player, enemy)) {
+                    gameState.player.hp -= 0.1;
                 }
+
+                // Remove dead enemies
+                if (enemy.hp <= 0) {
+                    gameState.enemies.splice(index, 1);
+                    createParticles(enemy.x, enemy.y, 10);
+                }
+            });
+
+            // Spawn new enemies when cleared
+            if (gameState.enemies.length === 0) {
+                spawnEnemies(5 + gameState.player.level * 2);
+                gameState.player.level++;
+                document.getElementById('playerLevel').textContent = gameState.player.level;
+            }
+
+            // Handle attacking
+            if (gameState.mouse.down) {
+                if (gameState.player.attackCooldown <= 0) {
+                    const dx = gameState.mouse.x - gameState.player.x;
+                    const dy = gameState.mouse.y - gameState.player.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    gameState.enemies.forEach(enemy => {
+                        const edx = enemy.x - gameState.player.x;
+                        const edy = enemy.y - gameState.player.y;
+                        const edist = Math.sqrt(edx * edx + edy * edy);
+
+                        if (edist < 60) {
+                            enemy.hp -= 25;
+                            createParticles(enemy.x, enemy.y, 5);
+                        }
+                    });
+
+                    gameState.player.attackCooldown = 10;
+                }
+            }
+
+            if (gameState.player.attackCooldown > 0) {
+                gameState.player.attackCooldown--;
+            }
+
+            // Update particles
+            gameState.particles = gameState.particles.filter(p => {
+                p.life--;
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.1; // Gravity
+                return p.life > 0;
+            });
+
+            // Update UI
+            document.getElementById('playerHP').textContent = Math.floor(gameState.player.hp) + '/' + gameState.player.maxHp;
+            document.getElementById('enemyCount').textContent = gameState.enemies.length;
+
+            // Game over check
+            if (gameState.player.hp <= 0) {
+                gameState.player.hp = gameState.player.maxHp;
+                gameState.player.x = CANVAS_WIDTH / 2;
+                gameState.player.y = CANVAS_HEIGHT / 2;
+                gameState.player.level = 1;
+                gameState.enemies = [];
+                spawnEnemies(5);
+            }
+
+            // Update FPS
+            gameState.frameCount++;
+            const currentTime = Date.now();
+            if (currentTime - gameState.lastTime >= 1000) {
+                gameState.fps = gameState.frameCount;
+                gameState.frameCount = 0;
+                gameState.lastTime = currentTime;
+                document.getElementById('fpsCounter').textContent = 'FPS: ' + gameState.fps;
             }
         }
 
-        function spawnEnemies() {
-            const now = Date.now();
-            const spawnCount = Math.min(game.level, MAX_ENEMIES);
+        function draw() {
+            const ctx = gameState.ctx;
+            const dungeon = DUNGEONS[gameState.currentDungeon];
 
-            if (now - game.lastSpawnTime > game.spawnRate && enemies.length < spawnCount) {
-                game.lastSpawnTime = now;
+            // Clear canvas
+            ctx.fillStyle = dungeon.color;
+            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-                // Random spawn position (avoid player)
-                let x, y, distance;
-                do {
-                    x = Math.random() * canvas.width;
-                    y = Math.random() * canvas.height;
-                    distance = Math.hypot(x - player.x, y - player.y);
-                } while (distance < 150);
+            // Draw parallax background layers
+            drawParallaxLayers(ctx, dungeon);
 
-                enemies.push({
+            // Draw tilemap pattern
+            drawTileMap(ctx, dungeon);
+
+            // Draw enemies
+            gameState.enemies.forEach(enemy => {
+                // Enemy body
+                ctx.fillStyle = enemy.color;
+                ctx.fillRect(enemy.x - enemy.width / 2, enemy.y - enemy.height / 2, enemy.width, enemy.height);
+
+                // Enemy outline
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(enemy.x - enemy.width / 2, enemy.y - enemy.height / 2, enemy.width, enemy.height);
+
+                // Enemy HP bar
+                const hpPercent = enemy.hp / enemy.maxHp;
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
+                ctx.fillRect(enemy.x - enemy.width / 2, enemy.y - enemy.height / 2 - 8, enemy.width, 4);
+                ctx.fillStyle = 'rgba(0, 255, 0, 0.8)';
+                ctx.fillRect(enemy.x - enemy.width / 2, enemy.y - enemy.height / 2 - 8, enemy.width * hpPercent, 4);
+            });
+
+            // Draw particles
+            gameState.particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life / p.maxLife;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+                ctx.globalAlpha = 1;
+            });
+
+            // Draw player
+            ctx.fillStyle = gameState.player.color;
+            ctx.fillRect(gameState.player.x - gameState.player.width / 2, gameState.player.y - gameState.player.height / 2, gameState.player.width, gameState.player.height);
+
+            // Player outline
+            ctx.strokeStyle = 'rgba(255, 255, 150, 0.8)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(gameState.player.x - gameState.player.width / 2, gameState.player.y - gameState.player.height / 2, gameState.player.width, gameState.player.height);
+
+            // Player HP bar
+            const playerHpPercent = gameState.player.hp / gameState.player.maxHp;
+            ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
+            ctx.fillRect(gameState.player.x - gameState.player.width / 2, gameState.player.y - gameState.player.height / 2 - 12, gameState.player.width, 4);
+            ctx.fillStyle = 'rgba(0, 255, 0, 0.8)';
+            ctx.fillRect(gameState.player.x - gameState.player.width / 2, gameState.player.y - gameState.player.height / 2 - 12, gameState.player.width * playerHpPercent, 4);
+
+            // Draw attack range indicator
+            if (gameState.mouse.down) {
+                ctx.strokeStyle = 'rgba(255, 255, 0, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(gameState.player.x, gameState.player.y, 60, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+        }
+
+        function drawParallaxLayers(ctx, dungeon) {
+            const colors = dungeon.parallaxColors;
+            
+            // Far layer
+            ctx.fillStyle = colors[0];
+            ctx.globalAlpha = 0.3;
+            for (let i = 0; i < 3; i++) {
+                ctx.fillRect((i * CANVAS_WIDTH - gameState.parallaxOffset * 0.1) % CANVAS_WIDTH, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            }
+
+            // Mid layer
+            ctx.fillStyle = colors[1];
+            ctx.globalAlpha = 0.5;
+            for (let i = 0; i < 3; i++) {
+                ctx.fillRect((i * CANVAS_WIDTH - gameState.parallaxOffset * 0.2) % CANVAS_WIDTH, CANVAS_HEIGHT * 0.6, CANVAS_WIDTH, CANVAS_HEIGHT * 0.4);
+            }
+
+            ctx.globalAlpha = 1;
+        }
+
+        function drawTileMap(ctx, dungeon) {
+            ctx.strokeStyle = dungeon.wallColor;
+            ctx.lineWidth = 1;
+
+            for (let x = 0; x < CANVAS_WIDTH; x += TILE_SIZE) {
+                for (let y = 0; y < CANVAS_HEIGHT; y += TILE_SIZE) {
+                    // Tile pattern based on dungeon type
+                    const pattern = (x + y) % (TILE_SIZE * 2) === 0;
+                    
+                    if (pattern) {
+                        ctx.fillStyle = dungeon.tileColor;
+                        ctx.globalAlpha = 0.15;
+                        ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+                    }
+                    
+                    ctx.globalAlpha = 0.1;
+                    ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
+                }
+            }
+
+            ctx.globalAlpha = 1;
+        }
+
+        function createParticles(x, y, count) {
+            for (let i = 0; i < count; i++) {
+                gameState.particles.push({
                     x: x,
                     y: y,
-                    width: 25,
-                    height: 25,
-                    health: 20 + game.level * 5,
-                    maxHealth: 20 + game.level * 5,
-                    speed: 1.5 + game.level * 0.2,
-                    color: `hsl(${Math.random() * 30 + 0}, 100%, 50%)`
+                    vx: (Math.random() - 0.5) * 4,
+                    vy: (Math.random() - 0.5) * 4 - 2,
+                    color: DUNGEONS[gameState.currentDungeon].accentColor,
+                    size: Math.random() * 4 + 2,
+                    life: Math.random() * 20 + 10,
+                    maxLife: Math.random() * 20 + 10
                 });
             }
         }
 
-        function checkCollisions() {
-            // Check if player is attacking
-            if (player.attacking) {
-                const attackRadius = 60;
-
-                for (let enemy of enemies) {
-                    const dx = enemy.x - player.x;
-                    const dy = enemy.y - player.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-
-                    if (distance < attackRadius) {
-                        const damage = 25 + game.level * 5;
-                        enemy.health -= damage;
-
-                        // Add damage number
-                        game.damageNumbers.push({
-                            x: enemy.x,
-                            y: enemy.y,
-                            damage: damage,
-                            time: 0
-                        });
-                    }
-                }
-            }
-
-            // Check if enemies hit player
-            for (let enemy of enemies) {
-                const dx = enemy.x - player.x;
-                const dy = enemy.y - player.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-
-                if (distance < player.width / 2 + enemy.width / 2) {
-                    player.health -= 1;
-                    game.health = player.health;
-
-                    if (player.health <= 0) {
-                        showGameOver();
-                    }
-                }
-            }
+        function checkCollision(rect1, rect2) {
+            return rect1.x - rect1.width / 2 < rect2.x + rect2.width / 2 &&
+                   rect1.x + rect1.width / 2 > rect2.x - rect2.width / 2 &&
+                   rect1.y - rect1.height / 2 < rect2.y + rect2.height / 2 &&
+                   rect1.y + rect1.height / 2 > rect2.y - rect2.height / 2;
         }
 
-        function render() {
-            // Clear canvas
-            ctx.fillStyle = '#0a0a0a';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Draw background grid (optimization: draw less frequently or cache)
-            drawBackground();
-
-            // Draw enemies
-            for (let enemy of enemies) {
-                drawEnemy(enemy);
-            }
-
-            // Draw player
-            drawPlayer();
-
-            // Draw damage numbers
-            drawDamageNumbers();
-        }
-
-        function drawBackground() {
-            ctx.strokeStyle = 'rgba(0, 255, 0, 0.1)';
-            ctx.lineWidth = 1;
-
-            for (let x = 0; x < canvas.width; x += GRID_SIZE) {
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, canvas.height);
-                ctx.stroke();
-            }
-
-            for (let y = 0; y < canvas.height; y += GRID_SIZE) {
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(canvas.width, y);
-                ctx.stroke();
-            }
-        }
-
-        function drawPlayer() {
-            ctx.save();
-            ctx.translate(player.x, player.y);
-            ctx.rotate(player.direction);
-
-            // Draw player body
-            ctx.fillStyle = '#00ff00';
-            ctx.fillRect(-player.width / 2, -player.height / 2, player.width, player.height);
-
-            // Draw player outline
-            ctx.strokeStyle = '#00cc00';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(-player.width / 2, -player.height / 2, player.width, player.height);
-
-            // Draw sword if attacking
-            if (player.attacking) {
-                ctx.fillStyle = '#ffaa00';
-                ctx.fillRect(player.width / 2, -8, 40, 16);
-                ctx.strokeStyle = '#ff8800';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(player.width / 2, -8, 40, 16);
-            }
-
-            // Draw eyes
-            ctx.fillStyle = '#000';
-            ctx.fillRect(-5, -5, 4, 4);
-            ctx.fillRect(5, -5, 4, 4);
-
-            ctx.restore();
-
-            // Draw glow effect
-            ctx.strokeStyle = 'rgba(0, 255, 0, 0.3)';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.arc(player.x, player.y, player.width, 0, Math.PI * 2);
-            ctx.stroke();
-        }
-
-        function drawEnemy(enemy) {
-            // Draw enemy body
-            ctx.fillStyle = enemy.color;
-            ctx.fillRect(enemy.x - enemy.width / 2, enemy.y - enemy.height / 2, enemy.width, enemy.height);
-
-            // Draw outline
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-            ctx.lineWidth = 1.5;
-            ctx.strokeRect(enemy.x - enemy.width / 2, enemy.y - enemy.height / 2, enemy.width, enemy.height);
-
-            // Draw health bar above enemy
-            const healthBarWidth = enemy.width;
-            const healthBarHeight = 4;
-            const healthRatio = enemy.health / enemy.maxHealth;
-
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-            ctx.fillRect(enemy.x - healthBarWidth / 2, enemy.y - enemy.height / 2 - 10, healthBarWidth, healthBarHeight);
-
-            ctx.fillStyle = `hsl(${Math.max(0, healthRatio * 120)}, 100%, 50%)`;
-            ctx.fillRect(enemy.x - healthBarWidth / 2, enemy.y - enemy.height / 2 - 10, healthBarWidth * healthRatio, healthBarHeight);
-        }
-
-        function drawDamageNumbers() {
-            ctx.font = 'bold 18px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-
-            for (let i = game.damageNumbers.length - 1; i >= 0; i--) {
-                const dmg = game.damageNumbers[i];
-                dmg.time += 16;
-
-                if (dmg.time > 1000) {
-                    game.damageNumbers.splice(i, 1);
-                    continue;
-                }
-
-                const opacity = 1 - (dmg.time / 1000);
-                const offsetY = (dmg.time / 1000) * 50;
-
-                ctx.fillStyle = `rgba(255, 68, 68, ${opacity})`;
-                ctx.fillText(`-${dmg.damage}`, dmg.x, dmg.y - offsetY);
-
-                ctx.strokeStyle = `rgba(0, 0, 0, ${opacity})`;
-                ctx.lineWidth = 3;
-                ctx.strokeText(`-${dmg.damage}`, dmg.x, dmg.y - offsetY);
-            }
-        }
-
-        function updateUI() {
-            document.getElementById('scoreDisplay').textContent = game.score;
-            document.getElementById('levelDisplay').textContent = game.level;
-            document.getElementById('enemyCountDisplay').textContent = enemies.length;
-
-            const healthPercent = (player.health / player.maxHealth) * 100;
-            document.getElementById('healthBarFill').style.width = healthPercent + '%';
-            document.getElementById('healthText').textContent = `${player.health} / ${player.maxHealth}`;
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
         }
 
         // Start the game
-        window.addEventListener('load', () => {
-            init();
-        });
-
-        // Handle visibility changes for performance
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                game.running = false;
-            }
-        });
+        window.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
